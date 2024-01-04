@@ -6,7 +6,8 @@ import Divider from "@mui/material/Divider";
 import { data } from "@/data/data";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import {
   Box,
   Button,
@@ -22,6 +23,20 @@ export default function Home() {
   const [filter, setFilter] = useState<string>("all");
   const [passengerOrder, setPassengerOrder] = useAtom(orderAtom);
   const [selectedPassenger, setPassenger] = useAtom(passengerAtom);
+  const [totalPrice, setTotalPrice] = useState<number>(0);
+
+  const calculateTotalPrice = () => {
+    let total = 0;
+    passengerOrder.forEach((passenger) => {
+      if (passenger.meal) {
+        total += passenger.meal.price;
+      }
+    });
+    setTotalPrice(total);
+  };
+  useEffect(() => {
+    calculateTotalPrice(); // Calculate total price when passengerOrder changes
+  }, [passengerOrder]);
 
   return (
     <Box padding="4rem" sx={{ bgcolor: "#424242" }} minHeight={"100vh"}>
@@ -93,6 +108,9 @@ export default function Home() {
                 );
               })}
             </List>
+            <Box textAlign="right" mt={2}>
+              <strong>Total Price: {totalPrice.toFixed(2)}</strong>
+            </Box>
           </Grid>
         </Grid>
       </Container>
