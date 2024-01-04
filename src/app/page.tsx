@@ -42,6 +42,7 @@ export default function Home() {
                 {data.labels.map((label) => {
                   return (
                     <Chip
+                      key={label.id}
                       label={label.label}
                       onClick={() => {
                         setFilter(label.id);
@@ -60,8 +61,8 @@ export default function Home() {
                   .filter((meal) =>
                     filter === "all" ? true : meal.labels.includes(filter)
                   )
-                  .map((meal) => (
-                    <Meal meal={meal}></Meal>
+                  .map((meal, index) => (
+                    <Meal meal={meal} key={index}></Meal>
                   ))}
               </Grid>
             </Box>
@@ -76,6 +77,7 @@ export default function Home() {
               {passengerOrder.map((passenger) => {
                 return (
                   <ListItemButton
+                    key={passenger.name}
                     selected={selectedPassenger === passenger.name}
                     onClick={() => setPassenger(passenger.name)}
                   >
@@ -159,7 +161,7 @@ function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
           <Grid gap={1} display={"flex"}>
             {meal.drinks.map((drink) => {
               return (
-                <Grid>
+                <Grid key={drink.id}>
                   <Chip
                     label={drink.title}
                     onClick={() => {
