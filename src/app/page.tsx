@@ -1,19 +1,34 @@
 "use client";
 import Image from "next/image";
+import { atom, useAtom, useAtomValue } from "jotai";
+
+import Divider from "@mui/material/Divider";
 import { data } from "@/data/data";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import { useState } from "react";
-import { Box, Button, Container, Grid } from "@mui/material";
+import {
+  Box,
+  Button,
+  Container,
+  Grid,
+  List,
+  ListItemButton,
+  ListItemText,
+} from "@mui/material";
+import { orderAtom, passengerAtom } from "@/lib/state";
 
 export default function Home() {
   const [filter, setFilter] = useState<string>("all");
+  const [passengerOrder, setPassengerOrder] = useAtom(orderAtom);
+  const [selectedPassenger, setPassenger] = useAtom(passengerAtom);
+
   return (
-    <Box margin="4rem">
+    <Box padding="4rem" sx={{ bgcolor: "#424242" }} minHeight={"100vh"}>
       <Container>
-        <Grid container spacing={2}>
-          <Grid xs={8}>
-            <Box>
+        <Grid container gap={2} display={"flex"}>
+          <Grid xs={8} gap={2} display={"flex"} flexDirection={"column"}>
+            <Box padding={2} sx={{ bgcolor: "white", borderRadius: "0.5rem" }}>
               <Stack direction="row" spacing={1}>
                 <Chip
                   label="All"
@@ -23,6 +38,7 @@ export default function Home() {
                   variant="outlined"
                   color={filter === "all" ? "info" : "default"}
                 ></Chip>
+
                 {data.labels.map((label) => {
                   return (
                     <Chip
@@ -37,8 +53,9 @@ export default function Home() {
                 })}
               </Stack>
             </Box>
+
             <Box>
-              <Grid container spacing={4} padding={8}>
+              <Grid container gap={2}>
                 {data.meals
                   .filter((meal) =>
                     filter === "all" ? true : meal.labels.includes(filter)
@@ -49,8 +66,31 @@ export default function Home() {
               </Grid>
             </Box>
           </Grid>
-          <Grid xs={4}>
-            <Box>Hi</Box>
+
+          <Grid
+            xs={3}
+            sx={{ bgcolor: "white", borderRadius: "0.5rem" }}
+            padding={4}
+          >
+            <List>
+              {passengerOrder.map((passenger) => {
+                return (
+                  <ListItemButton
+                    selected={selectedPassenger === passenger.name}
+                    onClick={() => setPassenger(passenger.name)}
+                  >
+                    {/* <ListItemText primary={passenger.name} /> */}
+                    <Box justifyContent={"space-between"}>
+                      <Box>{passenger.name}</Box>
+                      <Box>
+                        {passenger.meal ? "Meal selected" : "Not selected"}
+                      </Box>
+                      <Box>Price:{passenger.meal?.price.toPrecision(4)}</Box>
+                    </Box>
+                  </ListItemButton>
+                );
+              })}
+            </List>
           </Grid>
         </Grid>
       </Container>
@@ -60,8 +100,38 @@ export default function Home() {
 
 function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
   const [selectedDrink, setDrink] = useState<string>("drink-1");
+  const selectedPassenger = useAtomValue(passengerAtom);
+  const [orders, setOrders] = useAtom(orderAtom);
+  const [meals, setMeals] = useState({
+    meal: meal.id,
+    drink: meal.drinks[0].id,
+    price: meal.price + meal.drinks[0].price,
+  });
+  const handleMealSelection = () => {
+    const existingUserIndex = orders.findIndex(
+      (order) => order.name === selectedPassenger
+    );
+
+    if (existingUserIndex !== -1) {
+      const updatedOrders = [...orders];
+      updatedOrders[existingUserIndex] = {
+        name: selectedPassenger,
+        meal: meals,
+      };
+      setOrders(updatedOrders);
+    } else {
+      setOrders([...orders, { name: selectedPassenger, meal: meals }]);
+    }
+  };
+
   return (
-    <>
+    <Grid
+      display={"flex"}
+      gap={4}
+      padding={4}
+      width={"100%"}
+      sx={{ bgcolor: "white", borderRadius: "0.5rem" }}
+    >
       <Grid key={meal.id} item xs={4} height={200}>
         <img
           src={meal.img}
@@ -73,7 +143,7 @@ function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
           }}
         />
       </Grid>
-      <Grid xs={6} padding={4} display={"flex"} flexDirection={"column"}>
+      <Grid xs={6} display={"flex"} flexDirection={"column"}>
         <text>
           {meal.title} + {meal.drinks.length} drinks
         </text>
@@ -94,6 +164,11 @@ function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
                     label={drink.title}
                     onClick={() => {
                       setDrink(drink.id);
+                      setMeals((meals) => ({
+                        ...meals,
+                        drink: drink.id,
+                        price: meal.price + drink.price,
+                      }));
                     }}
                     variant="outlined"
                     color={selectedDrink === drink.id ? "info" : "default"}
@@ -104,7 +179,14 @@ function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
           </Grid>
         </Box>
       </Grid>
-      <Grid gap={3} display={"flex"} flexDirection={"column"} alignItems={"end"} justifyContent={"end"} xs={2}>
+      <Grid
+        gap={3}
+        display={"flex"}
+        flexDirection={"column"}
+        alignItems={"end"}
+        justifyContent={"end"}
+        xs={2}
+      >
         <text>
           Price:{" "}
           {(
@@ -112,8 +194,10 @@ function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
             meal.drinks.find((drink) => drink.id === selectedDrink)?.price!
           ).toPrecision(4)}
         </text>
-        <Button variant="outlined">Select </Button>
+        <Button variant="outlined" onClick={handleMealSelection}>
+          Select{" "}
+        </Button>
       </Grid>
-    </>
+    </Grid>
   );
 }
