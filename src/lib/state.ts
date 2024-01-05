@@ -1,8 +1,8 @@
 import { atom, useAtom } from "jotai";
 
 type Meal = {
-  meal: string;
-  drink: string;
+  meal?: string;
+  drink?: string;
   price: number;
 };
 

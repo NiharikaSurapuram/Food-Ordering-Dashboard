@@ -9,11 +9,11 @@ import { orderAtom, passengerAtom } from "@/lib/state";
 export function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
   const selectedPassenger = useAtomValue(passengerAtom);
   const [orders, setOrders] = useAtom(orderAtom);
-  const [order, setOrder] = useState({
-    meal: meal.id,
-    drink: meal.drinks[0].id,
-    price: meal.price + meal.drinks[0].price,
-  });
+  const [order, setOrder] = useState<{
+    meal?: string;
+    drink?: string;
+    price: number;
+  }>({ price: 0 });
 
   useEffect(() => {
     const existingUserIndex = orders.findIndex(
@@ -32,8 +32,13 @@ export function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
     }
   }, [order]);
 
-  const mealPrice =
-    meal.price + meal.drinks.find((drink) => drink.id === order.drink)?.price!;
+  const drinkPrice = () => {
+    if (meal.drinks.find((drink) => drink.id === order.drink) !== undefined) {
+      return meal.drinks.find((drink) => drink.id === order.drink)?.price!;
+    } else return 0;
+  };
+
+  const mealPrice = meal.price + drinkPrice();
 
   return (
     <Grid
@@ -133,6 +138,7 @@ export function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
                 ...order,
                 meal: meal.id,
                 price: mealPrice,
+                drink: order.drink ? order.drink : meal.drinks[0].id,
               })
             }
           >

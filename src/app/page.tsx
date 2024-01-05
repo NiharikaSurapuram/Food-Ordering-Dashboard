@@ -39,6 +39,7 @@ export default function Home() {
   };
   useEffect(() => {
     calculateTotalPrice(); // Calculate total price when passengerOrder changes
+    console.log(JSON.stringify(passengerOrder, undefined, 2));
   }, [passengerOrder]);
 
   const filteredMeals = data.meals.filter((meal) =>
