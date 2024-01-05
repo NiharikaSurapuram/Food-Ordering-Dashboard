@@ -16,6 +16,17 @@ export function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
   }>({ price: 0 });
 
   useEffect(() => {
+    setOrder(
+      orders.find((existingOrder) => existingOrder.name === selectedPassenger)
+        ?.meal
+        ? orders.find(
+            (existingOrder) => existingOrder.name === selectedPassenger
+          )?.meal!
+        : { price: 0 }
+    );
+  }, []);
+
+  useEffect(() => {
     const existingUserIndex = orders.findIndex(
       (order) => order.name === selectedPassenger
     );
@@ -32,13 +43,12 @@ export function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
     }
   }, [order]);
 
-  const drinkPrice = () => {
-    if (meal.drinks.find((drink) => drink.id === order.drink) !== undefined) {
-      return meal.drinks.find((drink) => drink.id === order.drink)?.price!;
-    } else return 0;
-  };
+  const drinkPrice = meal.drinks.find((drink) => drink.id === order.drink)
+    ?.price
+    ? meal.drinks.find((drink) => drink.id === order.drink)?.price!
+    : 0;
 
-  const mealPrice = meal.price + drinkPrice();
+  const mealPrice = meal.price + drinkPrice;
 
   return (
     <Grid
@@ -133,14 +143,14 @@ export function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
         ) : (
           <Button
             variant="outlined"
-            onClick={() =>
+            onClick={() => {
               setOrder({
                 ...order,
                 meal: meal.id,
-                price: mealPrice,
+                price: meal.price + meal.drinks[0].price,
                 drink: order.drink ? order.drink : meal.drinks[0].id,
-              })
-            }
+              });
+            }}
           >
             Select
           </Button>

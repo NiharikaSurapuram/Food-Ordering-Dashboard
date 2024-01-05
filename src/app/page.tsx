@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { atom, useAtom } from "jotai"; //atomic state manager, to avoid propdrilling
+import { atom, useAtom, useAtomValue } from "jotai"; //atomic state manager, to avoid propdrilling
 import Pagination from "@mui/material/Pagination";
 
 import Divider from "@mui/material/Divider";
@@ -22,7 +22,7 @@ import { Meal } from "./Meal";
 
 export default function Home() {
   const [filter, setFilter] = useState<string>("all");
-  const [passengerOrder, setPassengerOrder] = useAtom(orderAtom);
+  const orders = useAtomValue(orderAtom);
   const [selectedPassenger, setPassenger] = useAtom(passengerAtom);
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -30,7 +30,7 @@ export default function Home() {
 
   const calculateTotalPrice = () => {
     let total = 0;
-    passengerOrder.forEach((passenger) => {
+    orders.forEach((passenger) => {
       if (passenger.meal) {
         total += passenger.meal.price;
       }
@@ -39,8 +39,8 @@ export default function Home() {
   };
   useEffect(() => {
     calculateTotalPrice(); // Calculate total price when passengerOrder changes
-    console.log(JSON.stringify(passengerOrder, undefined, 2));
-  }, [passengerOrder]);
+    console.log(JSON.stringify(orders, undefined, 2));
+  }, [orders]);
 
   const filteredMeals = data.meals.filter((meal) =>
     filter === "all" ? true : meal.labels.includes(filter)
@@ -126,7 +126,7 @@ export default function Home() {
             maxWidth={"100%"}
           >
             <List>
-              {passengerOrder
+              {orders
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((passenger) => {
                   return (
