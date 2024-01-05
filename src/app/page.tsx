@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
-import { atom, useAtom, useAtomValue } from "jotai";
+import { atom, useAtom } from "jotai"; //atomic state manager, to avoid propdrilling
+import Pagination from "@mui/material/Pagination";
 
 import Divider from "@mui/material/Divider";
 import { data } from "@/data/data";
@@ -10,7 +11,6 @@ import { useState, useEffect } from "react";
 
 import {
   Box,
-  Button,
   Container,
   Grid,
   List,
@@ -18,12 +18,15 @@ import {
   ListItemText,
 } from "@mui/material";
 import { orderAtom, passengerAtom } from "@/lib/state";
+import { Meal } from "./Meal";
 
 export default function Home() {
   const [filter, setFilter] = useState<string>("all");
   const [passengerOrder, setPassengerOrder] = useAtom(orderAtom);
   const [selectedPassenger, setPassenger] = useAtom(passengerAtom);
   const [totalPrice, setTotalPrice] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const mealsPerPage: number = 3;
 
   const calculateTotalPrice = () => {
     let total = 0;
@@ -38,75 +41,110 @@ export default function Home() {
     calculateTotalPrice(); // Calculate total price when passengerOrder changes
   }, [passengerOrder]);
 
+  const filteredMeals = data.meals.filter((meal) =>
+    filter === "all" ? true : meal.labels.includes(filter)
+  );
+
+  const indexOfFirstMeal = (currentPage - 1) * mealsPerPage;
+  const indexOfLastMeal = currentPage * mealsPerPage;
+
+  const currentMeals = filteredMeals.slice(
+    indexOfFirstMeal,
+    Math.min(indexOfLastMeal, filteredMeals.length)
+  );
+
+  const totalMeals = filteredMeals.length;
+
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
   return (
-    <Box padding="4rem" sx={{ bgcolor: "#424242" }} minHeight={"100vh"}>
+    <Box
+      padding={{ xs: "1rem", md: "4rem" }}
+      sx={{ bgcolor: "#424242" }}
+      minHeight={"100vh"}
+    >
       <Container>
-        <Grid container gap={2} display={"flex"}>
-          <Grid xs={8} gap={2} display={"flex"} flexDirection={"column"}>
-            <Box padding={2} sx={{ bgcolor: "white", borderRadius: "0.5rem" }}>
-              <Stack direction="row" spacing={1}>
-                <Chip
-                  label="All"
-                  onClick={() => {
-                    setFilter("all");
-                  }}
-                  variant="outlined"
-                  color={filter === "all" ? "info" : "default"}
-                ></Chip>
-
-                {data.labels.map((label) => {
-                  return (
-                    <Chip
-                      key={label.id}
-                      label={label.label}
-                      onClick={() => {
-                        setFilter(label.id);
-                      }}
-                      variant="outlined"
-                      color={filter === label.id ? "info" : "default"}
-                    />
-                  );
-                })}
-              </Stack>
-            </Box>
-
+        <Grid
+          container
+          gap={2}
+          display={"flex"}
+          flexDirection={{ md: "row", xs: "column-reverse" }}
+          width={"100%"}
+        >
+          <Grid
+            gap={2}
+            display={"flex"}
+            flexDirection={"column"}
+            width={{ xs: "100%", md: "70%" }}
+          >
+            {/* {Filters(setFilter, setCurrentPage, filter)} */}
+            <Filters
+              filter={filter}
+              setCurrentPage={setCurrentPage}
+              setFilter={setFilter}
+            ></Filters>
             <Box>
               <Grid container gap={2}>
-                {data.meals
-                  .filter((meal) =>
-                    filter === "all" ? true : meal.labels.includes(filter)
-                  )
-                  .map((meal, index) => (
-                    <Meal meal={meal} key={index}></Meal>
-                  ))}
+                {currentMeals.map((meal) => (
+                  <Meal meal={meal} key={meal.id}></Meal>
+                ))}
               </Grid>
+              {totalMeals > mealsPerPage && (
+                <Box
+                  mt={3}
+                  display="flex"
+                  justifyContent="center"
+                  color={"white"}
+                  width={"100%"}
+                >
+                  <Pagination
+                    count={Math.ceil(totalMeals / mealsPerPage)}
+                    page={currentPage}
+                    onChange={(event, page) => paginate(page)}
+                    sx={{
+                      bgcolor: "white",
+                      color: "white",
+                      padding: 2,
+                      borderRadius: "0.5rem",
+                    }}
+                    color="secondary"
+                    size="large"
+                  />
+                </Box>
+              )}
             </Box>
           </Grid>
 
           <Grid
-            xs={3}
-            sx={{ bgcolor: "white", borderRadius: "0.5rem" }}
+            // xs={3}
+            sx={{ bgcolor: "white", borderRadius: "0.5rem", flexGrow: 1 }}
             padding={4}
+            flexGrow="initial"
+            maxWidth={"100%"}
           >
             <List>
-              {passengerOrder.map((passenger) => {
-                return (
-                  <ListItemButton
-                    key={passenger.name}
-                    selected={selectedPassenger === passenger.name}
-                    onClick={() => setPassenger(passenger.name)}
-                  >
-                    {/* <ListItemText primary={passenger.name} /> */}
-                    <Box justifyContent={"space-between"}>
-                      <Box>{passenger.name}</Box>
-                      <Box>
-                        {passenger.meal ? "Meal selected" : "Not selected"}
+              {passengerOrder
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((passenger) => {
+                  return (
+                    <ListItemButton
+                      key={passenger.name}
+                      selected={selectedPassenger === passenger.name}
+                      onClick={() => setPassenger(passenger.name)}
+                    >
+                      {/* <ListItemText primary={passenger.name} /> */}
+                      <Box justifyContent={"space-between"}>
+                        <Box>{passenger.name}</Box>
+                        <Box>
+                          {passenger.meal ? "Meal selected" : "Not selected"}
+                        </Box>
+                        <Box>Price:{passenger.meal?.price.toFixed(2)}</Box>
                       </Box>
-                      <Box>Price:{passenger.meal?.price.toPrecision(4)}</Box>
-                    </Box>
-                  </ListItemButton>
-                );
-              })}
+                    </ListItemButton>
+                  );
+                })}
             </List>
             <Box textAlign="right" mt={2}>
               <strong>Total Price: {totalPrice.toFixed(2)}</strong>
@@ -117,107 +155,43 @@ export default function Home() {
     </Box>
   );
 }
-
-function Meal({ meal }: { meal: (typeof data.meals)[0] }) {
-  const [selectedDrink, setDrink] = useState<string>("drink-1");
-  const selectedPassenger = useAtomValue(passengerAtom);
-  const [orders, setOrders] = useAtom(orderAtom);
-  const [meals, setMeals] = useState({
-    meal: meal.id,
-    drink: meal.drinks[0].id,
-    price: meal.price + meal.drinks[0].price,
-  });
-  const handleMealSelection = () => {
-    const existingUserIndex = orders.findIndex(
-      (order) => order.name === selectedPassenger
-    );
-
-    if (existingUserIndex !== -1) {
-      const updatedOrders = [...orders];
-      updatedOrders[existingUserIndex] = {
-        name: selectedPassenger,
-        meal: meals,
-      };
-      setOrders(updatedOrders);
-    } else {
-      setOrders([...orders, { name: selectedPassenger, meal: meals }]);
-    }
-  };
-
+function Filters({
+  setFilter,
+  setCurrentPage,
+  filter,
+}: {
+  setFilter: (filter: string) => void;
+  setCurrentPage: (page: number) => void;
+  filter: string;
+}) {
   return (
-    <Grid
-      display={"flex"}
-      gap={4}
-      padding={4}
-      width={"100%"}
-      sx={{ bgcolor: "white", borderRadius: "0.5rem" }}
-    >
-      <Grid key={meal.id} item xs={4} height={200}>
-        <img
-          src={meal.img}
-          alt={meal.id}
-          style={{
-            objectFit: "cover",
-            height: "100%",
-            width: "100%",
+    <Box padding={2} sx={{ bgcolor: "white", borderRadius: "0.5rem" }}>
+      <Stack direction="row" gap={1} flexWrap={"wrap"}>
+        <Chip
+          label="All"
+          onClick={() => {
+            setFilter("all");
+            setCurrentPage(1);
           }}
-        />
-      </Grid>
-      <Grid xs={6} display={"flex"} flexDirection={"column"}>
-        <text>
-          {meal.title} + {meal.drinks.length} drinks
-        </text>
-        <text>Name of the meal</text>
-        <text>Starter: {meal.starter}</text>
-        <text>Dessert: {meal.desert}</text>
-        <text>
-          Selected drink:{" "}
-          {meal.drinks.find((drink) => drink.id === selectedDrink)?.title ||
-            "Not Found"}
-        </text>
-        <Box gap={3} display={"flex"}>
-          <Grid gap={1} display={"flex"}>
-            {meal.drinks.map((drink) => {
-              return (
-                <Grid key={drink.id}>
-                  <Chip
-                    label={drink.title}
-                    onClick={() => {
-                      setDrink(drink.id);
-                      setMeals((meals) => ({
-                        ...meals,
-                        drink: drink.id,
-                        price: meal.price + drink.price,
-                      }));
-                    }}
-                    variant="outlined"
-                    color={selectedDrink === drink.id ? "info" : "default"}
-                  />
-                </Grid>
-              );
-            })}
-          </Grid>
-        </Box>
-      </Grid>
-      <Grid
-        gap={3}
-        display={"flex"}
-        flexDirection={"column"}
-        alignItems={"end"}
-        justifyContent={"end"}
-        xs={2}
-      >
-        <text>
-          Price:{" "}
-          {(
-            meal.price +
-            meal.drinks.find((drink) => drink.id === selectedDrink)?.price!
-          ).toPrecision(4)}
-        </text>
-        <Button variant="outlined" onClick={handleMealSelection}>
-          Select{" "}
-        </Button>
-      </Grid>
-    </Grid>
+          variant="outlined"
+          color={filter === "all" ? "info" : "default"}
+        ></Chip>
+
+        {data.labels.map((label) => {
+          return (
+            <Chip
+              key={label.id}
+              label={label.label}
+              onClick={() => {
+                setFilter(label.id);
+                setCurrentPage(1);
+              }}
+              variant="outlined"
+              color={filter === label.id ? "info" : "default"}
+            />
+          );
+        })}
+      </Stack>
+    </Box>
   );
 }
